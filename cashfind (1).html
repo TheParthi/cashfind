@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="theme-color" content="#0d0d0d"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<title>CashFind — Currency Detector</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0d0d0d;--card:#161616;--card2:#1e1e1e;--border:#2a2a2a;
+  --text:#f5f5f5;--muted:#666;--gold:#e8b84b;
+  --green:#3ddc84;--red:#ff5c5c;
+}
+html,body{background:var(--bg);color:var(--text);font-family:'Outfit',sans-serif;min-height:100vh;overflow-x:hidden}
+body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:999;opacity:.3}
+.orb{position:fixed;border-radius:50%;filter:blur(90px);pointer-events:none;z-index:0;opacity:.14}
+.orb.a{width:380px;height:380px;background:var(--gold);top:-100px;right:-80px}
+.orb.b{width:280px;height:280px;background:#ff6b35;bottom:-60px;left:-60px}
+.wrap{max-width:480px;margin:0 auto;padding:20px 15px 60px;position:relative;z-index:1}
+
+/* HEADER */
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;animation:fadeDown .5s ease both}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-mark{width:42px;height:42px;background:var(--gold);border-radius:11px;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:22px;color:#000;box-shadow:0 0 22px rgba(232,184,75,.45);flex-shrink:0}
+.brand-name{font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:.06em;color:var(--gold);line-height:1}
+.brand-tag{font-size:.62rem;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;margin-top:1px}
+
+/* HTTPS NOTICE */
+.https-notice{background:#1a1200;border:1px solid #f5a623;border-radius:14px;padding:14px 16px;margin-bottom:14px;display:none}
+.https-notice p{font-size:.8rem;color:#f5a623;line-height:1.6}
+.https-notice strong{color:#fff}
+.https-notice code{background:rgba(255,255,255,.1);padding:2px 7px;border-radius:5px;font-size:.75rem;color:#f5d87a}
+
+/* API KEY SECTION */
+.key-banner{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:14px;animation:fadeUp .4s ease both}
+.key-banner-label{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;font-weight:600;margin-bottom:8px}
+.key-row{display:flex;gap:8px}
+.key-input{flex:1;padding:10px 13px;background:var(--card2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'Outfit',sans-serif;font-size:.85rem;outline:none;transition:border-color .2s;min-width:0}
+.key-input:focus{border-color:var(--gold)}
+.key-input::placeholder{color:var(--muted);opacity:.5}
+.key-save{padding:10px 18px;background:var(--gold);color:#000;border:none;border-radius:10px;font-family:'Outfit',sans-serif;font-weight:700;font-size:.85rem;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .2s}
+.key-save:hover{transform:translateY(-1px)}
+.key-hint{font-size:.68rem;color:var(--muted);margin-top:8px;line-height:1.5}
+.key-hint a{color:var(--gold);text-decoration:none}
+.key-connected{display:none;align-items:center;justify-content:space-between}
+.key-connected-info{display:flex;align-items:center;gap:7px;font-size:.82rem;color:var(--green)}
+.key-connected-info::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--green);display:block;box-shadow:0 0 8px var(--green);flex-shrink:0}
+.key-change{background:none;border:1px solid var(--border);color:var(--muted);padding:6px 12px;border-radius:8px;font-family:'Outfit',sans-serif;font-size:.72rem;cursor:pointer;transition:all .2s}
+.key-change:hover{border-color:var(--gold);color:var(--gold)}
+
+/* LANG */
+.lang-wrap{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:5px;display:flex;gap:4px;margin-bottom:14px;overflow-x:auto;scrollbar-width:none;animation:fadeUp .5s ease .1s both}
+.lang-wrap::-webkit-scrollbar{display:none}
+.lang-btn{flex:1;min-width:fit-content;padding:7px 10px;border:none;border-radius:10px;background:transparent;color:var(--muted);font-family:'Outfit',sans-serif;font-size:.76rem;font-weight:500;cursor:pointer;transition:all .2s;white-space:nowrap}
+.lang-btn.on{background:var(--gold);color:#000;font-weight:700}
+.lang-btn:hover:not(.on){color:var(--text);background:var(--card2)}
+
+/* CAMERA */
+.cam-card{border-radius:20px;overflow:hidden;border:1px solid var(--border);background:#000;margin-bottom:14px;position:relative;animation:fadeUp .5s ease .15s both}
+.cam-inner{position:relative;width:100%;aspect-ratio:4/3;background:#000;overflow:hidden}
+#video{width:100%;height:100%;object-fit:cover;display:none}
+#previewImg{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;display:none}
+.placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+.placeholder-icon{font-size:3.5rem;opacity:.2}
+.placeholder-txt{font-size:.8rem;color:var(--muted);opacity:.6;text-align:center;padding:0 20px}
+.scan-frame{position:absolute;inset:0;pointer-events:none;display:none}
+.scan-frame.live{display:block}
+.scan-line{position:absolute;left:6%;right:6%;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);box-shadow:0 0 14px var(--gold);top:12%;animation:scanMove 2.4s ease-in-out infinite}
+.c{position:absolute;width:20px;height:20px;border-color:var(--gold);border-style:solid;opacity:.9}
+.c.tl{top:8%;left:5%;border-width:2px 0 0 2px}.c.tr{top:8%;right:5%;border-width:2px 2px 0 0}
+.c.bl{bottom:8%;left:5%;border-width:0 0 2px 2px}.c.br{bottom:8%;right:5%;border-width:0 2px 2px 0}
+.result-overlay{position:absolute;bottom:0;left:0;right:0;padding:16px 18px 18px;background:linear-gradient(to top,rgba(0,0,0,.95) 0%,rgba(0,0,0,.5) 60%,transparent 100%);display:none;align-items:flex-end;justify-content:space-between}
+.result-overlay.show{display:flex}
+.result-tag{font-size:.62rem;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px}
+.result-amount{font-family:'Bebas Neue',sans-serif;font-size:3.2rem;line-height:1;color:var(--gold);text-shadow:0 0 30px rgba(232,184,75,.6);transition:color .3s}
+.result-name{font-size:.75rem;color:rgba(255,255,255,.45);margin-top:2px}
+.speak-btn{width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.09);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:1.3rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0}
+.speak-btn:hover{background:rgba(255,255,255,.18);transform:scale(1.06)}
+.analyzing{position:absolute;inset:0;background:rgba(0,0,0,.75);display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+.analyzing.show{display:flex}
+.spin{width:44px;height:44px;border:3px solid rgba(232,184,75,.2);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite}
+.analyzing p{font-size:.82rem;color:var(--muted);letter-spacing:.04em}
+
+/* BUTTONS */
+.btn-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;animation:fadeUp .5s ease .2s both}
+.btn{padding:15px 10px;border:none;border-radius:14px;font-family:'Outfit',sans-serif;font-size:.88rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .18s;white-space:nowrap}
+.btn-gold{background:var(--gold);color:#000;box-shadow:0 4px 20px rgba(232,184,75,.25)}
+.btn-gold:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(232,184,75,.38)}
+.btn-gold:active{transform:translateY(0)}
+.btn-outline{background:var(--card);color:var(--text);border:1px solid var(--border)}
+.btn-outline:hover:not(:disabled){background:var(--card2)}
+.btn-outline:disabled{opacity:.35;cursor:not-allowed}
+.btn-dashed{grid-column:1/-1;background:transparent;border:1px dashed var(--border);color:var(--muted);font-size:.82rem}
+.btn-dashed:hover{border-color:var(--gold);color:var(--gold)}
+
+/* STATUS */
+.status{display:flex;align-items:flex-start;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 15px;margin-bottom:12px;animation:fadeUp .5s ease .25s both}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex-shrink:0;margin-top:5px;transition:background .3s}
+.dot.active{background:var(--green);box-shadow:0 0 8px var(--green);animation:blink 1.6s ease-in-out infinite}
+.dot.error{background:var(--red)}
+.dot.thinking{background:var(--gold);animation:blink 1s ease-in-out infinite}
+#statusTxt{font-size:.8rem;color:var(--muted);line-height:1.5}
+
+/* CHIPS */
+.chips-row{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px;animation:fadeUp .5s ease .3s both}
+.chip{padding:5px 13px;border-radius:20px;border:1px solid;font-family:'Bebas Neue',sans-serif;font-size:.95rem;letter-spacing:.04em;transition:all .2s}
+.chip.highlight{transform:scale(1.14);box-shadow:0 0 16px currentColor}
+
+/* HISTORY */
+.history{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;animation:fadeUp .5s ease .35s both}
+.history-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.history-title{font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:.08em;color:var(--muted)}
+.clear-btn{background:none;border:none;color:var(--muted);font-size:.72rem;cursor:pointer;font-family:'Outfit',sans-serif;transition:color .2s}
+.clear-btn:hover{color:var(--red)}
+.hist-list{display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.hist-item{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;background:var(--card2);border-radius:10px;animation:slideIn .3s ease both}
+.hist-amt{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:.04em}
+.hist-meta{font-size:.7rem;color:var(--muted);flex:1;text-align:right;margin-right:10px}
+.hist-speak{background:none;border:none;cursor:pointer;font-size:.95rem;padding:3px 7px;border-radius:6px;color:var(--muted);transition:all .15s}
+.hist-speak:hover{color:var(--gold);background:var(--border)}
+.empty-state{text-align:center;padding:20px;color:var(--muted);font-size:.8rem;opacity:.55}
+
+@keyframes fadeDown{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes scanMove{0%,100%{top:12%;opacity:1}50%{top:78%;opacity:.65}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes slideIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)}}
+@keyframes detectedPulse{0%{box-shadow:0 0 0 0 rgba(232,184,75,.55)}70%{box-shadow:0 0 0 22px rgba(232,184,75,0)}100%{box-shadow:0 0 0 0 rgba(232,184,75,0)}}
+.cam-card.detected{animation:detectedPulse .9s ease}
+@media(max-width:360px){.btn{font-size:.78rem;padding:13px 8px}.result-amount{font-size:2.6rem}}
+</style>
+</head>
+<body>
+<div class="orb a"></div><div class="orb b"></div>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mark">₹</div>
+      <div>
+        <div class="brand-name">CashFind</div>
+        <div class="brand-tag">AI Currency Detector</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- HTTPS warning -->
+  <div class="https-notice" id="httpsNotice">
+    <p>⚠️ <strong>Camera needs HTTPS to work on mobile</strong><br/>
+    You're opening this as a local file. Camera is blocked by the browser for security.<br/>
+    <strong>Fix:</strong> Upload <code>cashfind.html</code> to GitHub Pages → you'll get a free HTTPS link → camera works perfectly. <strong>Upload Image still works right now.</strong></p>
+  </div>
+
+  <!-- API KEY -->
+  <div class="key-banner" id="keyBanner">
+    <div class="key-banner-label">Anthropic API Key</div>
+    <div id="keyInputArea">
+      <div class="key-row">
+        <input type="password" class="key-input" id="apiKeyInput" placeholder="sk-ant-api03-..." autocomplete="off" spellcheck="false"/>
+        <button class="key-save" onclick="saveKey()">Save</button>
+      </div>
+      <div class="key-hint">Get a free key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> — stored in your browser only, never shared.</div>
+    </div>
+    <div class="key-connected" id="keyConnected">
+      <span class="key-connected-info">API Key connected — AI ready</span>
+      <button class="key-change" onclick="changeKey()">Change Key</button>
+    </div>
+  </div>
+
+  <!-- LANG -->
+  <div class="lang-wrap" id="langBar"></div>
+
+  <!-- CAMERA -->
+  <div class="cam-card" id="camCard">
+    <div class="cam-inner">
+      <video id="video" autoplay playsinline muted></video>
+      <img id="previewImg" alt="Note preview"/>
+      <div class="placeholder" id="placeholder">
+        <div class="placeholder-icon">₹</div>
+        <div class="placeholder-txt">Open camera or upload a note image</div>
+      </div>
+      <div class="scan-frame" id="scanFrame">
+        <div class="scan-line"></div>
+        <div class="c tl"></div><div class="c tr"></div>
+        <div class="c bl"></div><div class="c br"></div>
+      </div>
+      <div class="result-overlay" id="resultOverlay">
+        <div>
+          <div class="result-tag">Detected Note</div>
+          <div class="result-amount" id="resultAmt">₹500</div>
+          <div class="result-name" id="resultName">Five Hundred Rupees</div>
+        </div>
+        <button class="speak-btn" onclick="speakLast()">🔊</button>
+      </div>
+      <div class="analyzing" id="analyzing">
+        <div class="spin"></div>
+        <p id="analyzingTxt">AI is reading the note...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- BUTTONS -->
+  <div class="btn-grid">
+    <button class="btn btn-gold" id="camBtn" onclick="toggleCam()">📷 Open Camera</button>
+    <button class="btn btn-outline" id="detectBtn" onclick="captureDetect()" disabled>🎯 Detect</button>
+    <button class="btn btn-dashed" onclick="triggerUpload()">📁 Upload Image</button>
+  </div>
+  <input type="file" id="fileIn" accept="image/*" style="display:none" onchange="handleUpload(event)"/>
+  <canvas id="canvas" style="display:none"></canvas>
+
+  <!-- STATUS -->
+  <div class="status">
+    <div class="dot" id="statusDot"></div>
+    <span id="statusTxt">Enter your API key above to get started</span>
+  </div>
+
+  <!-- CHIPS -->
+  <div class="chips-row" id="chips"></div>
+
+  <!-- HISTORY -->
+  <div class="history">
+    <div class="history-head">
+      <span class="history-title">History</span>
+      <button class="clear-btn" onclick="clearHistory()">Clear all</button>
+    </div>
+    <div class="hist-list" id="histList"><div class="empty-state">No detections yet</div></div>
+  </div>
+
+</div>
+<script>
+const NOTES=[10,20,50,100,200,500,2000];
+const NOTE_META={
+  10:{name:'Ten Rupees',color:'#c084fc'},20:{name:'Twenty Rupees',color:'#fb923c'},
+  50:{name:'Fifty Rupees',color:'#4ade80'},100:{name:'One Hundred Rupees',color:'#38bdf8'},
+  200:{name:'Two Hundred Rupees',color:'#f472b6'},500:{name:'Five Hundred Rupees',color:'#e8b84b'},
+  2000:{name:'Two Thousand Rupees',color:'#f87171'}
+};
+const LANGS={
+  en:{code:'en-IN',label:'English',say:v=>`This is a ${v} rupee note`},
+  hi:{code:'hi-IN',label:'हिन्दी',say:v=>`यह ${v} रुपये का नोट है`},
+  ta:{code:'ta-IN',label:'தமிழ்',say:v=>`இது ${v} ரூபாய் நோட்டு`},
+  te:{code:'te-IN',label:'తెలుగు',say:v=>`ఇది ${v} రూపాయల నోటు`},
+  bn:{code:'bn-IN',label:'বাংলা',say:v=>`এটি ${v} টাকার নোট`}
+};
+
+// Safe storage — works even on file:// where localStorage may throw
+const Store={
+  _mem:{},
+  get(k){try{return localStorage.getItem(k)}catch(e){return this._mem[k]||null}},
+  set(k,v){try{localStorage.setItem(k,v)}catch(e){this._mem[k]=v}},
+  del(k){try{localStorage.removeItem(k)}catch(e){delete this._mem[k]}}
+};
+
+let apiKey=Store.get('cf_key')||'';
+let lang=Store.get('cf_lang')||'en';
+let stream=null,camOn=false,lastResult=null;
+let history=[];
+try{history=JSON.parse(Store.get('cf_history')||'[]')}catch(e){}
+
+function init(){
+  buildLangBar(); buildChips(); renderHistory(); updateKeyUI();
+  // Detect if local file or http (camera will be blocked)
+  const secure = location.protocol==='https:' || location.hostname==='localhost' || location.hostname==='127.0.0.1';
+  if(!secure) document.getElementById('httpsNotice').style.display='block';
+  window.speechSynthesis&&window.speechSynthesis.getVoices();
+}
+
+// KEY
+function saveKey(){
+  const v=document.getElementById('apiKeyInput').value.trim();
+  if(!v){alert('Please enter your API key');return}
+  if(!v.startsWith('sk-ant')){alert('Invalid key — should start with sk-ant');return}
+  apiKey=v; Store.set('cf_key',v); updateKeyUI();
+  setStatus('Ready — open camera or upload a note image','active');
+}
+function changeKey(){
+  apiKey=''; Store.del('cf_key');
+  document.getElementById('apiKeyInput').value='';
+  updateKeyUI();
+  setStatus('Enter your API key to continue','idle');
+}
+function updateKeyUI(){
+  document.getElementById('keyInputArea').style.display=apiKey?'none':'block';
+  document.getElementById('keyConnected').style.display=apiKey?'flex':'none';
+}
+
+// LANG
+function buildLangBar(){
+  document.getElementById('langBar').innerHTML=Object.entries(LANGS).map(([k,v])=>
+    `<button class="lang-btn${lang===k?' on':''}" onclick="setLang('${k}',this)">${v.label}</button>`
+  ).join('');
+}
+function setLang(l,btn){
+  lang=l; Store.set('cf_lang',l);
+  document.querySelectorAll('.lang-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  if(lastResult) speak(lastResult);
+}
+
+// CHIPS
+function buildChips(){
+  document.getElementById('chips').innerHTML=NOTES.map(n=>
+    `<span class="chip" id="chip${n}" style="color:${NOTE_META[n].color};border-color:${NOTE_META[n].color}44">₹${n}</span>`
+  ).join('');
+}
+function highlightChip(d){
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('highlight'));
+  const el=document.getElementById('chip'+d);
+  if(el){el.classList.add('highlight');setTimeout(()=>el.classList.remove('highlight'),2200)}
+}
+
+// CAMERA
+async function toggleCam(){
+  if(!apiKey){document.getElementById('apiKeyInput').focus();setStatus('Enter your API key first ☝️','error');return}
+  camOn?stopCam():await startCam();
+}
+async function startCam(){
+  try{
+    setStatus('Requesting camera access...','thinking');
+    document.getElementById('previewImg').style.display='none';
+    document.getElementById('previewImg').src='';
+    // Try rear camera first, then fallbacks
+    let s=null;
+    const tries=[
+      {video:{facingMode:{exact:'environment'},width:{ideal:1280},height:{ideal:960}}},
+      {video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:960}}},
+      {video:{width:{ideal:1280},height:{ideal:960}}},
+      {video:true}
+    ];
+    for(const c of tries){
+      try{s=await navigator.mediaDevices.getUserMedia(c);break}
+      catch(e){if(e.name==='NotAllowedError'||e.name==='PermissionDeniedError')throw e}
+    }
+    if(!s)throw new Error('No camera found');
+    stream=s;
+    const vid=document.getElementById('video');
+    vid.srcObject=s; await vid.play(); vid.style.display='block';
+    document.getElementById('placeholder').style.display='none';
+    document.getElementById('scanFrame').classList.add('live');
+    document.getElementById('camBtn').innerHTML='⛔ Stop Camera';
+    document.getElementById('detectBtn').disabled=false;
+    document.getElementById('resultOverlay').classList.remove('show');
+    lastResult=null; camOn=true;
+    setStatus('Camera active — hold note flat in frame, tap Detect','active');
+  }catch(e){
+    let msg;
+    if(e.name==='NotAllowedError'||e.name==='PermissionDeniedError'){
+      msg='Camera permission denied.\nFix: tap 🔒 in browser address bar → Site settings → Camera → Allow → refresh page.';
+    } else if(location.protocol!=='https:'&&location.hostname!=='localhost'){
+      msg='Camera blocked — needs HTTPS. Host on GitHub Pages for free HTTPS. Use Upload Image for now.';
+    } else {
+      msg='Camera error: '+e.message;
+    }
+    setStatus(msg,'error');
+  }
+}
+function stopCam(){
+  if(stream)stream.getTracks().forEach(t=>t.stop());
+  stream=null;
+  const vid=document.getElementById('video');
+  vid.srcObject=null; vid.style.display='none';
+  document.getElementById('scanFrame').classList.remove('live');
+  document.getElementById('placeholder').style.display='flex';
+  document.getElementById('camBtn').innerHTML='📷 Open Camera';
+  document.getElementById('detectBtn').disabled=true;
+  camOn=false; setStatus('Camera stopped','idle');
+}
+
+async function captureDetect(){
+  if(!apiKey){setStatus('Enter API key first','error');return}
+  const vid=document.getElementById('video'),cvs=document.getElementById('canvas');
+  if(!vid.videoWidth){setStatus('Camera not ready yet','error');return}
+  cvs.width=vid.videoWidth; cvs.height=vid.videoHeight;
+  const ctx=cvs.getContext('2d');
+  ctx.filter='brightness(1.2) contrast(1.25) saturate(1.1)';
+  ctx.drawImage(vid,0,0); ctx.filter='none';
+  await runAI(cvs.toDataURL('image/jpeg',0.92).split(',')[1]);
+}
+
+function triggerUpload(){document.getElementById('fileIn').click()}
+async function handleUpload(e){
+  const file=e.target.files[0]; if(!file) return;
+  if(!apiKey){setStatus('Enter API key first','error');return}
+  if(camOn) stopCam();
+  const reader=new FileReader();
+  reader.onload=async ev=>{
+    const src=ev.target.result;
+    const img=document.getElementById('previewImg');
+    img.src=src; img.style.display='block';
+    document.getElementById('placeholder').style.display='none';
+    document.getElementById('scanFrame').classList.add('live');
+    await runAI(src.split(',')[1]);
+  };
+  reader.readAsDataURL(file); e.target.value='';
+}
+
+// CLAUDE VISION
+async function runAI(b64){
+  setAnalyzing(true,'AI is reading the note...');
+  setStatus('Analyzing with Claude Vision AI...','thinking');
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':apiKey,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({
+        model:'claude-opus-4-6',
+        max_tokens:150,
+        messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},
+          {type:'text',text:`Identify this Indian Rupee note denomination. Look for the large printed number, RBI text, Gandhi portrait, and language panel. Valid: 10, 20, 50, 100, 200, 500, 2000. Reply ONLY with JSON: {"denomination":500,"confidence":95,"note":"Stone grey series"} or {"denomination":null,"confidence":0,"note":"No clear note"}`}
+        ]}]
+      })
+    });
+    if(!res.ok){
+      const err=await res.json().catch(()=>({}));
+      if(res.status===401)throw new Error('INVALID_KEY');
+      throw new Error(err.error?.message||'API error '+res.status);
+    }
+    const data=await res.json();
+    const text=(data.content[0]?.text||'').replace(/```json|```/g,'').trim();
+    const parsed=JSON.parse(text);
+    setAnalyzing(false);
+    if(!parsed.denomination){setStatus('No note detected — try better lighting or closer shot','error');return}
+    showResult(parsed);
+  }catch(err){
+    setAnalyzing(false);
+    if(err.message==='INVALID_KEY'||err.message.includes('401')){
+      setStatus('Invalid API key — click Change Key and re-enter','error'); changeKey();
+    } else if(err.message.includes('Failed to fetch')){
+      setStatus('Network error — check your internet connection','error');
+    } else {
+      setStatus('Error: '+err.message,'error');
+    }
+  }
+}
+
+function showResult({denomination,confidence,note}){
+  lastResult=denomination;
+  const meta=NOTE_META[denomination]||{name:'Rupees',color:'var(--gold)'};
+  document.getElementById('resultAmt').textContent='₹'+denomination;
+  document.getElementById('resultAmt').style.color=meta.color;
+  document.getElementById('resultAmt').style.textShadow=`0 0 30px ${meta.color}88`;
+  document.getElementById('resultName').textContent=meta.name+(note?` · ${note}`:'');
+  document.getElementById('resultOverlay').classList.add('show');
+  const card=document.getElementById('camCard');
+  card.classList.remove('detected'); void card.offsetWidth; card.classList.add('detected');
+  setStatus(`✅ ₹${denomination} detected · ${confidence}% confidence · Claude AI`,'active');
+  highlightChip(denomination); speak(denomination); addHistory(denomination,confidence);
+}
+
+function speakLast(){if(lastResult)speak(lastResult)}
+function speak(d){
+  if(!window.speechSynthesis)return;
+  window.speechSynthesis.cancel();
+  const cfg=LANGS[lang];
+  const utt=new SpeechSynthesisUtterance(cfg.say(d));
+  utt.lang=cfg.code; utt.rate=0.88; utt.volume=1;
+  const voices=window.speechSynthesis.getVoices();
+  const match=voices.find(v=>v.lang.startsWith(cfg.code.split('-')[0]));
+  if(match)utt.voice=match;
+  window.speechSynthesis.speak(utt);
+}
+
+function addHistory(d,confidence){
+  const now=new Date();
+  history.unshift({denomination:d,confidence,time:now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),date:now.toLocaleDateString([],{month:'short',day:'numeric'})});
+  if(history.length>30)history.pop();
+  try{Store.set('cf_history',JSON.stringify(history))}catch(e){}
+  renderHistory();
+}
+function clearHistory(){history=[];Store.del('cf_history');renderHistory()}
+function renderHistory(){
+  const el=document.getElementById('histList');
+  if(!history.length){el.innerHTML='<div class="empty-state">No detections yet</div>';return}
+  el.innerHTML=history.map((h,i)=>{
+    const m=NOTE_META[h.denomination]||{color:'var(--gold)'};
+    return `<div class="hist-item" style="animation-delay:${i*.04}s">
+      <span class="hist-amt" style="color:${m.color}">₹${h.denomination}</span>
+      <span class="hist-meta">${h.confidence}% · ${h.date} ${h.time}</span>
+      <button class="hist-speak" onclick="speak(${h.denomination})">🔊</button>
+    </div>`;
+  }).join('');
+}
+
+function setStatus(txt,type){
+  document.getElementById('statusTxt').textContent=txt;
+  document.getElementById('statusDot').className='dot'+(type&&type!=='idle'?' '+type:'');
+}
+function setAnalyzing(show,txt){
+  if(txt)document.getElementById('analyzingTxt').textContent=txt;
+  document.getElementById('analyzing').classList.toggle('show',show);
+}
+
+document.getElementById('apiKeyInput').addEventListener('keydown',e=>{if(e.key==='Enter')saveKey()});
+init();
+</script>
+</body>
+</html>
