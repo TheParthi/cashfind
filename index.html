@@ -181,7 +181,7 @@ header{display:flex;align-items:center;justify-content:space-between;margin-bott
         <input type="password" class="key-input" id="apiKeyInput" placeholder="AIzaSy..." autocomplete="off" spellcheck="false"/>
         <button class="key-save" onclick="saveKey()">Save</button>
       </div>
-      <div class="key-note">✅ Free: 15 requests/min, 1500/day. No credit card. Stored in browser only.</div>
+      <div class="key-note">✅ Free: 15 requests/min, 1000/day. No credit card. Stored in browser only.</div>
     </div>
     <div class="key-connected" id="keyConnected">
       <span class="key-ok">Gemini connected — free &amp; ready</span>
@@ -467,8 +467,8 @@ async function runAI(b64, retryCount=0){
   lastCallTime=Date.now();
 
   try{
-    // gemini-1.5-flash: 15 RPM, 1500 RPD free — most generous free tier
-    const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    // gemini-2.5-flash-lite: free tier, fast, vision support
+    const url=`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`;
     const res=await fetch(url,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
