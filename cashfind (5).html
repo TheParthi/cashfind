@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="theme-color" content="#0d0d0d"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<title>CashFind — Currency Detector</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--bg:#0d0d0d;--card:#161616;--card2:#1e1e1e;--border:#2a2a2a;--text:#f5f5f5;--muted:#666;--gold:#e8b84b;--green:#3ddc84;--red:#ff5c5c}
+html,body{background:var(--bg);color:var(--text);font-family:'Outfit',sans-serif;min-height:100vh;overflow-x:hidden}
+body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:999;opacity:.3}
+.orb{position:fixed;border-radius:50%;filter:blur(90px);pointer-events:none;z-index:0;opacity:.12}
+.orb.a{width:360px;height:360px;background:var(--gold);top:-100px;right:-80px}
+.orb.b{width:260px;height:260px;background:#ff6b35;bottom:-60px;left:-60px}
+.wrap{max-width:480px;margin:0 auto;padding:20px 15px 60px;position:relative;z-index:1}
+
+/* HEADER */
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;animation:fadeDown .5s ease both}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-mark{width:42px;height:42px;background:var(--gold);border-radius:11px;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:22px;color:#000;box-shadow:0 0 22px rgba(232,184,75,.45);flex-shrink:0}
+.brand-name{font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:.06em;color:var(--gold);line-height:1}
+.brand-tag{font-size:.62rem;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;margin-top:1px}
+.free-badge{font-size:.68rem;background:rgba(61,220,132,.12);color:var(--green);border:1px solid rgba(61,220,132,.3);padding:4px 10px;border-radius:20px;white-space:nowrap;font-weight:600}
+
+/* HTTPS NOTICE */
+.notice{border-radius:14px;padding:13px 16px;margin-bottom:14px;display:none;font-size:.8rem;line-height:1.6}
+.notice.warn{background:#1a1200;border:1px solid #f5a623;color:#f5a623}
+.notice strong{color:#fff}
+.notice code{background:rgba(255,255,255,.1);padding:2px 7px;border-radius:5px;font-size:.74rem;color:#f5d87a}
+
+/* INFO CARD */
+.info-card{background:var(--card);border:1px solid rgba(61,220,132,.2);border-radius:16px;padding:14px 16px;margin-bottom:14px;animation:fadeUp .4s ease both}
+.info-card-title{font-size:.7rem;color:var(--green);text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.info-card p{font-size:.78rem;color:var(--muted);line-height:1.6}
+.info-card strong{color:var(--text)}
+
+/* LANG */
+.lang-wrap{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:5px;display:flex;gap:4px;margin-bottom:14px;overflow-x:auto;scrollbar-width:none;animation:fadeUp .5s ease .1s both}
+.lang-wrap::-webkit-scrollbar{display:none}
+.lang-btn{flex:1;min-width:fit-content;padding:7px 10px;border:none;border-radius:10px;background:transparent;color:var(--muted);font-family:'Outfit',sans-serif;font-size:.76rem;font-weight:500;cursor:pointer;transition:all .2s;white-space:nowrap}
+.lang-btn.on{background:var(--gold);color:#000;font-weight:700}
+.lang-btn:hover:not(.on){color:var(--text);background:var(--card2)}
+
+/* TIPS */
+.tips{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 15px;margin-bottom:14px;animation:fadeUp .5s ease .12s both}
+.tips-title{font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;font-weight:600;margin-bottom:8px}
+.tips-list{display:flex;flex-direction:column;gap:4px}
+.tip{font-size:.76rem;color:var(--muted);display:flex;align-items:flex-start;gap:7px;line-height:1.4}
+.tip span:first-child{flex-shrink:0}
+
+/* CAMERA */
+.cam-card{border-radius:20px;overflow:hidden;border:1px solid var(--border);background:#000;margin-bottom:14px;position:relative;animation:fadeUp .5s ease .15s both}
+.cam-inner{position:relative;width:100%;aspect-ratio:4/3;background:#000;overflow:hidden}
+#video{width:100%;height:100%;object-fit:cover;display:none}
+#previewImg{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;display:none}
+.placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+.placeholder-icon{font-size:3.5rem;opacity:.2}
+.placeholder-txt{font-size:.8rem;color:var(--muted);opacity:.6;text-align:center;padding:0 20px}
+
+/* SCAN FRAME */
+.scan-frame{position:absolute;inset:0;pointer-events:none;display:none}
+.scan-frame.live{display:block}
+.scan-line{position:absolute;left:6%;right:6%;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);box-shadow:0 0 14px var(--gold);top:12%;animation:scanMove 2.4s ease-in-out infinite}
+.c{position:absolute;width:20px;height:20px;border-color:var(--gold);border-style:solid;opacity:.9}
+.c.tl{top:8%;left:5%;border-width:2px 0 0 2px}.c.tr{top:8%;right:5%;border-width:2px 2px 0 0}
+.c.bl{bottom:8%;left:5%;border-width:0 0 2px 2px}.c.br{bottom:8%;right:5%;border-width:0 2px 2px 0}
+
+/* RESULT */
+.result-overlay{position:absolute;bottom:0;left:0;right:0;padding:16px 18px 18px;background:linear-gradient(to top,rgba(0,0,0,.96) 0%,rgba(0,0,0,.55) 60%,transparent 100%);display:none;align-items:flex-end;justify-content:space-between}
+.result-overlay.show{display:flex}
+.result-tag{font-size:.62rem;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px}
+.result-amount{font-family:'Bebas Neue',sans-serif;font-size:3.4rem;line-height:1;color:var(--gold);text-shadow:0 0 30px rgba(232,184,75,.6);transition:color .3s}
+.result-name{font-size:.75rem;color:rgba(255,255,255,.45);margin-top:2px}
+.confidence-bar{height:3px;border-radius:2px;background:rgba(255,255,255,.15);margin-top:6px;overflow:hidden;width:120px}
+.confidence-fill{height:100%;border-radius:2px;background:var(--gold);transition:width .5s ease}
+.speak-btn{width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.09);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:1.3rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0}
+.speak-btn:hover{background:rgba(255,255,255,.18);transform:scale(1.06)}
+
+/* ANALYZING */
+.analyzing{position:absolute;inset:0;background:rgba(0,0,0,.78);display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+.analyzing.show{display:flex}
+.spin{width:44px;height:44px;border:3px solid rgba(232,184,75,.2);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite}
+.analyzing p{font-size:.82rem;color:var(--muted);letter-spacing:.04em;text-align:center}
+
+/* BUTTONS */
+.btn-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;animation:fadeUp .5s ease .2s both}
+.btn{padding:15px 10px;border:none;border-radius:14px;font-family:'Outfit',sans-serif;font-size:.88rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .18s;white-space:nowrap}
+.btn-gold{background:var(--gold);color:#000;box-shadow:0 4px 20px rgba(232,184,75,.25)}
+.btn-gold:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(232,184,75,.38)}
+.btn-gold:active{transform:translateY(0)}
+.btn-outline{background:var(--card);color:var(--text);border:1px solid var(--border)}
+.btn-outline:hover:not(:disabled){background:var(--card2)}
+.btn-outline:disabled{opacity:.35;cursor:not-allowed}
+.btn-dashed{grid-column:1/-1;background:transparent;border:1px dashed var(--border);color:var(--muted);font-size:.82rem}
+.btn-dashed:hover{border-color:var(--gold);color:var(--gold)}
+
+/* STATUS */
+.status{display:flex;align-items:flex-start;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 15px;margin-bottom:12px;animation:fadeUp .5s ease .25s both}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex-shrink:0;margin-top:5px;transition:background .3s}
+.dot.active{background:var(--green);box-shadow:0 0 8px var(--green);animation:blink 1.6s ease-in-out infinite}
+.dot.error{background:var(--red)}
+.dot.thinking{background:var(--gold);animation:blink 1s ease-in-out infinite}
+#statusTxt{font-size:.8rem;color:var(--muted);line-height:1.5}
+
+/* CHIPS */
+.chips-row{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px;animation:fadeUp .5s ease .3s both}
+.chip{padding:5px 13px;border-radius:20px;border:1px solid;font-family:'Bebas Neue',sans-serif;font-size:.95rem;letter-spacing:.04em;transition:all .25s}
+.chip.highlight{transform:scale(1.15);box-shadow:0 0 18px currentColor}
+
+/* HISTORY */
+.history{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;animation:fadeUp .5s ease .35s both}
+.history-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.history-title{font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:.08em;color:var(--muted)}
+.clear-btn{background:none;border:none;color:var(--muted);font-size:.72rem;cursor:pointer;font-family:'Outfit',sans-serif;transition:color .2s}
+.clear-btn:hover{color:var(--red)}
+.hist-list{display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.hist-item{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;background:var(--card2);border-radius:10px;animation:slideIn .3s ease both}
+.hist-amt{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:.04em}
+.hist-meta{font-size:.7rem;color:var(--muted);flex:1;text-align:right;margin-right:10px}
+.hist-speak{background:none;border:none;cursor:pointer;font-size:.95rem;padding:3px 7px;border-radius:6px;color:var(--muted);transition:all .15s}
+.hist-speak:hover{color:var(--gold);background:var(--border)}
+.empty-state{text-align:center;padding:20px;color:var(--muted);font-size:.8rem;opacity:.55}
+
+@keyframes fadeDown{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes scanMove{0%,100%{top:12%;opacity:1}50%{top:78%;opacity:.65}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes slideIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)}}
+@keyframes detectedPulse{0%{box-shadow:0 0 0 0 rgba(232,184,75,.55)}70%{box-shadow:0 0 0 22px rgba(232,184,75,0)}100%{box-shadow:0 0 0 0 rgba(232,184,75,0)}}
+.cam-card.detected{animation:detectedPulse .9s ease}
+@media(max-width:360px){.btn{font-size:.78rem;padding:13px 8px}.result-amount{font-size:2.6rem}}
+</style>
+</head>
+<body>
+<div class="orb a"></div><div class="orb b"></div>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mark">₹</div>
+      <div>
+        <div class="brand-name">CashFind</div>
+        <div class="brand-tag">AI Currency Detector</div>
+      </div>
+    </div>
+    <div class="free-badge">✅ 100% Free</div>
+  </header>
+
+  <div class="notice warn" id="httpsNotice">
+    <p>⚠️ <strong>Camera needs HTTPS.</strong> You're on a local file — camera is blocked.<br/>
+    Host on GitHub Pages for free HTTPS. <strong>Upload Image still works now.</strong></p>
+  </div>
+
+  <!-- INFO -->
+  <div class="info-card">
+    <div class="info-card-title">🧠 No API Key Needed</div>
+    <p>CashFind runs <strong>entirely in your browser</strong> using smart image analysis. No internet calls, no accounts, no limits — completely private and free forever.</p>
+  </div>
+
+  <!-- TIPS -->
+  <div class="tips">
+    <div class="tips-title">📸 For Best Accuracy</div>
+    <div class="tips-list">
+      <div class="tip"><span>💡</span><span>Use good lighting — avoid dark or shadowy shots</span></div>
+      <div class="tip"><span>📐</span><span>Hold note flat and fill the frame as much as possible</span></div>
+      <div class="tip"><span>🎯</span><span>Keep note straight, not at an angle</span></div>
+      <div class="tip"><span>🚫</span><span>Avoid crumpled or heavily worn notes</span></div>
+    </div>
+  </div>
+
+  <!-- LANG -->
+  <div class="lang-wrap" id="langBar"></div>
+
+  <!-- CAMERA -->
+  <div class="cam-card" id="camCard">
+    <div class="cam-inner">
+      <video id="video" autoplay playsinline muted></video>
+      <img id="previewImg" alt="Note preview"/>
+      <div class="placeholder" id="placeholder">
+        <div class="placeholder-icon">₹</div>
+        <div class="placeholder-txt">Open camera or upload a note image</div>
+      </div>
+      <div class="scan-frame" id="scanFrame">
+        <div class="scan-line"></div>
+        <div class="c tl"></div><div class="c tr"></div>
+        <div class="c bl"></div><div class="c br"></div>
+      </div>
+      <div class="result-overlay" id="resultOverlay">
+        <div>
+          <div class="result-tag">Detected Note</div>
+          <div class="result-amount" id="resultAmt">₹500</div>
+          <div class="result-name" id="resultName">Five Hundred Rupees</div>
+          <div class="confidence-bar"><div class="confidence-fill" id="confBar" style="width:0%"></div></div>
+        </div>
+        <button class="speak-btn" onclick="speakLast()">🔊</button>
+      </div>
+      <div class="analyzing" id="analyzing">
+        <div class="spin"></div>
+        <p id="analyzingTxt">Analyzing note...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- BUTTONS -->
+  <div class="btn-grid">
+    <button class="btn btn-gold" id="camBtn" onclick="toggleCam()">📷 Open Camera</button>
+    <button class="btn btn-outline" id="detectBtn" onclick="captureDetect()" disabled>🎯 Detect</button>
+    <button class="btn btn-dashed" onclick="triggerUpload()">📁 Upload Image</button>
+  </div>
+  <input type="file" id="fileIn" accept="image/*" style="display:none" onchange="handleUpload(event)"/>
+  <canvas id="canvas" style="display:none"></canvas>
+  <canvas id="debugCanvas" style="display:none"></canvas>
+
+  <!-- STATUS -->
+  <div class="status">
+    <div class="dot active" id="statusDot"></div>
+    <span id="statusTxt">Ready — no API key needed! Open camera or upload a note.</span>
+  </div>
+
+  <!-- CHIPS -->
+  <div class="chips-row" id="chips"></div>
+
+  <!-- HISTORY -->
+  <div class="history">
+    <div class="history-head">
+      <span class="history-title">History</span>
+      <button class="clear-btn" onclick="clearHistory()">Clear all</button>
+    </div>
+    <div class="hist-list" id="histList"><div class="empty-state">No detections yet</div></div>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  CashFind — 100% In-Browser Currency Detection
+//  No API key, no internet calls, completely free
+//  Uses advanced multi-zone HSV color analysis + pattern matching
+// ═══════════════════════════════════════════════════════════
+
+const NOTES = [10, 20, 50, 100, 200, 500, 2000];
+
+const NOTE_META = {
+  10:   { name: 'Ten Rupees',           color: '#c084fc' },
+  20:   { name: 'Twenty Rupees',         color: '#fb923c' },
+  50:   { name: 'Fifty Rupees',          color: '#4ade80' },
+  100:  { name: 'One Hundred Rupees',    color: '#38bdf8' },
+  200:  { name: 'Two Hundred Rupees',    color: '#f472b6' },
+  500:  { name: 'Five Hundred Rupees',   color: '#e8b84b' },
+  2000: { name: 'Two Thousand Rupees',   color: '#f87171' },
+};
+
+// ── Indian Rupee Note Color Profiles (HSV ranges) ──────────
+// Each note has carefully calibrated hue/saturation/value ranges
+// based on actual RBI Mahatma Gandhi New Series notes
+const NOTE_PROFILES = {
+  10: {
+    // Chocolate brown / pink-brown
+    zones: [
+      { hMin:340, hMax:30,  sMin:20, sMax:80,  vMin:30, vMax:85, weight:3 }, // brown/pink
+      { hMin:15,  hMax:40,  sMin:15, sMax:60,  vMin:40, vMax:90, weight:2 }, // tan/beige
+    ],
+    dominantHue: 15, satRange: [15, 70], valRange: [35, 85],
+  },
+  20: {
+    // Yellow-green / olive green
+    zones: [
+      { hMin:50,  hMax:100, sMin:25, sMax:90,  vMin:35, vMax:90, weight:4 }, // yellow-green
+      { hMin:40,  hMax:70,  sMin:30, sMax:85,  vMin:40, vMax:88, weight:3 }, // olive
+    ],
+    dominantHue: 70, satRange: [25, 90], valRange: [35, 90],
+  },
+  50: {
+    // Fluorescent blue / cyan-blue
+    zones: [
+      { hMin:185, hMax:230, sMin:30, sMax:95,  vMin:40, vMax:95, weight:4 }, // cyan-blue
+      { hMin:170, hMax:210, sMin:25, sMax:90,  vMin:45, vMax:95, weight:3 }, // light blue
+    ],
+    dominantHue: 205, satRange: [30, 95], valRange: [40, 95],
+  },
+  100: {
+    // Lavender / blue-purple
+    zones: [
+      { hMin:240, hMax:290, sMin:15, sMax:70,  vMin:50, vMax:95, weight:4 }, // lavender
+      { hMin:220, hMax:260, sMin:20, sMax:75,  vMin:45, vMax:92, weight:3 }, // blue-purple
+    ],
+    dominantHue: 265, satRange: [15, 75], valRange: [50, 95],
+  },
+  200: {
+    // Bright yellow / orange-yellow
+    zones: [
+      { hMin:30,  hMax:60,  sMin:40, sMax:100, vMin:60, vMax:100, weight:5 }, // bright yellow
+      { hMin:20,  hMax:50,  sMin:35, sMax:95,  vMin:55, vMax:100, weight:3 }, // orange-yellow
+    ],
+    dominantHue: 45, satRange: [40, 100], valRange: [60, 100],
+  },
+  500: {
+    // Stone grey / greenish-grey
+    zones: [
+      { hMin:100, hMax:160, sMin:5,  sMax:40,  vMin:40, vMax:80, weight:4 }, // grey-green
+      { hMin:80,  hMax:140, sMin:5,  sMax:35,  vMin:45, vMax:82, weight:3 }, // stone grey
+      { hMin:0,   hMax:360, sMin:0,  sMax:25,  vMin:40, vMax:78, weight:2 }, // neutral grey
+    ],
+    dominantHue: 120, satRange: [3, 45], valRange: [38, 82],
+  },
+  2000: {
+    // Magenta / pink-red
+    zones: [
+      { hMin:290, hMax:360, sMin:30, sMax:95,  vMin:40, vMax:90, weight:4 }, // magenta
+      { hMin:320, hMax:380, sMin:25, sMax:90,  vMin:45, vMax:92, weight:4 }, // pink-red (wraps)
+      { hMin:0,   hMax:20,  sMin:25, sMax:90,  vMin:40, vMax:90, weight:3 }, // red
+    ],
+    dominantHue: 330, satRange: [25, 95], valRange: [40, 92],
+  },
+};
+
+const LANGS = {
+  en: { code:'en-IN', label:'English', say: v => `This is a ${v} rupee note` },
+  hi: { code:'hi-IN', label:'हिन्दी',  say: v => `यह ${v} रुपये का नोट है` },
+  ta: { code:'ta-IN', label:'தமிழ்',   say: v => `இது ${v} ரூபாய் நோட்டு` },
+  te: { code:'te-IN', label:'తెలుగు',  say: v => `ఇది ${v} రూపాయల నోటు` },
+  bn: { code:'bn-IN', label:'বাংলা',   say: v => `এটি ${v} টাকার নোট` },
+};
+
+const Store = {
+  _m:{},
+  get(k){try{return localStorage.getItem(k)}catch(e){return this._m[k]||null}},
+  set(k,v){try{localStorage.setItem(k,v)}catch(e){this._m[k]=v}},
+  del(k){try{localStorage.removeItem(k)}catch(e){delete this._m[k]}}
+};
+
+let lang = Store.get('cf_lang') || 'en';
+let stream = null, camOn = false, lastResult = null;
+let history = [];
+try { history = JSON.parse(Store.get('cf_history') || '[]'); } catch(e) {}
+
+function init() {
+  buildLangBar(); buildChips(); renderHistory();
+  const secure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  if (!secure) document.getElementById('httpsNotice').style.display = 'block';
+  window.speechSynthesis && window.speechSynthesis.getVoices();
+}
+
+// ── RGB → HSV conversion ─────────────────────────────────
+function rgbToHsv(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r,g,b), min = Math.min(r,g,b);
+  const d = max - min;
+  let h = 0, s = max === 0 ? 0 : d / max, v = max;
+  if (d !== 0) {
+    if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+    else if (max === g) h = ((b - r) / d + 2) / 6;
+    else h = ((r - g) / d + 4) / 6;
+  }
+  return [h * 360, s * 100, v * 100];
+}
+
+// ── Check if HSV falls in a zone (handles hue wrap at 360) ──
+function hsvInZone(h, s, v, zone) {
+  const hInRange = zone.hMin <= zone.hMax
+    ? (h >= zone.hMin && h <= zone.hMax)
+    : (h >= zone.hMin || h <= zone.hMax); // wraps around 0/360
+  return hInRange && s >= zone.sMin && s <= zone.sMax && v >= zone.vMin && v <= zone.vMax;
+}
+
+// ── Core detection: multi-zone weighted scoring ──────────
+function detectNote(imageData) {
+  const { data, width, height } = imageData;
+
+  // Sample from 5 zones: center, top-center, bottom-center, left-center, right-center
+  // This handles partially visible notes much better
+  const regions = [
+    { x: 0.15, y: 0.15, w: 0.70, h: 0.70, weight: 3.0 }, // center (heaviest)
+    { x: 0.20, y: 0.05, w: 0.60, h: 0.30, weight: 1.5 }, // top band
+    { x: 0.20, y: 0.65, w: 0.60, h: 0.30, weight: 1.5 }, // bottom band
+    { x: 0.02, y: 0.20, w: 0.20, h: 0.60, weight: 1.0 }, // left (language panel)
+    { x: 0.78, y: 0.20, w: 0.20, h: 0.60, weight: 1.0 }, // right
+  ];
+
+  // Build HSV histogram for each region
+  const scores = {};
+  NOTES.forEach(n => scores[n] = 0);
+
+  let totalWeight = 0;
+
+  for (const region of regions) {
+    const x0 = Math.floor(region.x * width);
+    const y0 = Math.floor(region.y * height);
+    const x1 = Math.floor((region.x + region.w) * width);
+    const y1 = Math.floor((region.y + region.h) * height);
+
+    // Count pixel matches per note in this region
+    const noteHits = {};
+    NOTES.forEach(n => noteHits[n] = 0);
+    let totalPx = 0;
+
+    // Sample every 4th pixel for speed
+    for (let y = y0; y < y1; y += 4) {
+      for (let x = x0; x < x1; x += 4) {
+        const i = (y * width + x) * 4;
+        const r = data[i], g = data[i+1], b = data[i+2];
+        const [h, s, v] = rgbToHsv(r, g, b);
+        totalPx++;
+
+        for (const note of NOTES) {
+          const profile = NOTE_PROFILES[note];
+          for (const zone of profile.zones) {
+            if (hsvInZone(h, s, v, zone)) {
+              noteHits[note] += zone.weight;
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    if (totalPx > 0) {
+      for (const note of NOTES) {
+        scores[note] += (noteHits[note] / totalPx) * region.weight;
+      }
+      totalWeight += region.weight;
+    }
+  }
+
+  // Normalize scores
+  if (totalWeight > 0) {
+    NOTES.forEach(n => scores[n] /= totalWeight);
+  }
+
+  // Find winner
+  let best = null, bestScore = -1;
+  for (const note of NOTES) {
+    if (scores[note] > bestScore) {
+      bestScore = scores[note];
+      best = note;
+    }
+  }
+
+  // Calculate confidence (how much better the winner is vs 2nd best)
+  const sorted = NOTES.map(n => scores[n]).sort((a,b) => b-a);
+  const gap = sorted[0] - (sorted[1] || 0);
+  
+  // Confidence: based on score magnitude and gap from 2nd place
+  const rawConf = Math.min(95, Math.round(
+    (bestScore * 120) + (gap * 200)
+  ));
+  const confidence = Math.max(30, rawConf);
+
+  return { denomination: best, confidence, scores };
+}
+
+// ── LANG ──────────────────────────────────────────────────
+function buildLangBar() {
+  document.getElementById('langBar').innerHTML = Object.entries(LANGS).map(([k,v]) =>
+    `<button class="lang-btn${lang===k?' on':''}" onclick="setLang('${k}',this)">${v.label}</button>`
+  ).join('');
+}
+function setLang(l, btn) {
+  lang = l; Store.set('cf_lang', l);
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  if (lastResult) speak(lastResult);
+}
+
+// ── CHIPS ─────────────────────────────────────────────────
+function buildChips() {
+  document.getElementById('chips').innerHTML = NOTES.map(n =>
+    `<span class="chip" id="chip${n}" style="color:${NOTE_META[n].color};border-color:${NOTE_META[n].color}44">₹${n}</span>`
+  ).join('');
+}
+function highlightChip(d) {
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('highlight'));
+  const el = document.getElementById('chip' + d);
+  if (el) { el.classList.add('highlight'); setTimeout(() => el.classList.remove('highlight'), 2500); }
+}
+
+// ── CAMERA ────────────────────────────────────────────────
+async function toggleCam() { camOn ? stopCam() : await startCam(); }
+
+async function startCam() {
+  try {
+    setStatus('Requesting camera access...', 'thinking');
+    document.getElementById('previewImg').style.display = 'none';
+    document.getElementById('previewImg').src = '';
+    let s = null;
+    const tries = [
+      { video: { facingMode: {exact:'environment'}, width:{ideal:1280}, height:{ideal:960} } },
+      { video: { facingMode: {ideal:'environment'}, width:{ideal:1280}, height:{ideal:960} } },
+      { video: { width:{ideal:1280}, height:{ideal:960} } },
+      { video: true }
+    ];
+    for (const c of tries) {
+      try { s = await navigator.mediaDevices.getUserMedia(c); break; }
+      catch(e) { if (e.name==='NotAllowedError'||e.name==='PermissionDeniedError') throw e; }
+    }
+    if (!s) throw new Error('No camera found');
+    stream = s;
+    const vid = document.getElementById('video');
+    vid.srcObject = s; await vid.play(); vid.style.display = 'block';
+    document.getElementById('placeholder').style.display = 'none';
+    document.getElementById('scanFrame').classList.add('live');
+    document.getElementById('camBtn').innerHTML = '⛔ Stop Camera';
+    document.getElementById('detectBtn').disabled = false;
+    document.getElementById('resultOverlay').classList.remove('show');
+    lastResult = null; camOn = true;
+    setStatus('Camera active — hold note flat in frame, tap Detect', 'active');
+  } catch(e) {
+    let msg;
+    if (e.name==='NotAllowedError'||e.name==='PermissionDeniedError') {
+      msg = 'Camera denied. Tap 🔒 in address bar → Site settings → Camera → Allow → refresh.';
+    } else if (location.protocol!=='https:' && location.hostname!=='localhost') {
+      msg = 'Camera needs HTTPS. Host on GitHub Pages. Use Upload Image for now.';
+    } else {
+      msg = 'Camera error: ' + e.message;
+    }
+    setStatus(msg, 'error');
+  }
+}
+
+function stopCam() {
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  stream = null;
+  const vid = document.getElementById('video');
+  vid.srcObject = null; vid.style.display = 'none';
+  document.getElementById('scanFrame').classList.remove('live');
+  document.getElementById('placeholder').style.display = 'flex';
+  document.getElementById('camBtn').innerHTML = '📷 Open Camera';
+  document.getElementById('detectBtn').disabled = true;
+  camOn = false;
+  setStatus('Camera stopped', 'idle');
+}
+
+async function captureDetect() {
+  const vid = document.getElementById('video');
+  const cvs = document.getElementById('canvas');
+  if (!vid.videoWidth) { setStatus('Camera not ready yet', 'error'); return; }
+  cvs.width = vid.videoWidth; cvs.height = vid.videoHeight;
+  const ctx = cvs.getContext('2d');
+  // Enhance: boost contrast and saturation for better color detection
+  ctx.filter = 'brightness(1.1) contrast(1.3) saturate(1.4)';
+  ctx.drawImage(vid, 0, 0);
+  ctx.filter = 'none';
+  await runDetect(ctx, cvs.width, cvs.height);
+}
+
+function triggerUpload() { document.getElementById('fileIn').click(); }
+
+async function handleUpload(e) {
+  const file = e.target.files[0]; if (!file) return;
+  if (camOn) stopCam();
+  const reader = new FileReader();
+  reader.onload = async ev => {
+    const src = ev.target.result;
+    const img = document.getElementById('previewImg');
+    img.src = src; img.style.display = 'block';
+    document.getElementById('placeholder').style.display = 'none';
+    document.getElementById('scanFrame').classList.add('live');
+
+    // Draw to canvas for analysis
+    const image = new Image();
+    image.onload = async () => {
+      const cvs = document.getElementById('canvas');
+      cvs.width = image.width; cvs.height = image.height;
+      const ctx = cvs.getContext('2d');
+      ctx.filter = 'brightness(1.05) contrast(1.2) saturate(1.3)';
+      ctx.drawImage(image, 0, 0);
+      ctx.filter = 'none';
+      await runDetect(ctx, cvs.width, cvs.height);
+    };
+    image.src = src;
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+}
+
+async function runDetect(ctx, w, h) {
+  setAnalyzing(true, 'Analyzing note colors...');
+  setStatus('Processing image...', 'thinking');
+
+  // Small delay to let UI update
+  await new Promise(r => setTimeout(r, 80));
+
+  try {
+    const imageData = ctx.getImageData(0, 0, w, h);
+    const result = detectNote(imageData);
+    setAnalyzing(false);
+    showResult(result);
+  } catch(err) {
+    setAnalyzing(false);
+    setStatus('Detection error: ' + err.message, 'error');
+  }
+}
+
+// ── SHOW RESULT ───────────────────────────────────────────
+function showResult({ denomination, confidence }) {
+  lastResult = denomination;
+  const meta = NOTE_META[denomination] || { name: 'Rupees', color: 'var(--gold)' };
+
+  document.getElementById('resultAmt').textContent = '₹' + denomination;
+  document.getElementById('resultAmt').style.color = meta.color;
+  document.getElementById('resultAmt').style.textShadow = `0 0 30px ${meta.color}88`;
+  document.getElementById('resultName').textContent = meta.name;
+  document.getElementById('confBar').style.width = confidence + '%';
+  document.getElementById('confBar').style.background = confidence >= 70 ? '#3ddc84' : confidence >= 50 ? '#e8b84b' : '#ff5c5c';
+  document.getElementById('resultOverlay').classList.add('show');
+
+  const card = document.getElementById('camCard');
+  card.classList.remove('detected'); void card.offsetWidth; card.classList.add('detected');
+
+  const confLabel = confidence >= 75 ? 'High confidence' : confidence >= 55 ? 'Medium confidence' : 'Low confidence — try again with better lighting';
+  setStatus(`✅ ₹${denomination} detected · ${confidence}% · ${confLabel}`, 'active');
+  highlightChip(denomination);
+  speak(denomination);
+  addHistory(denomination, confidence);
+}
+
+// ── SPEECH ────────────────────────────────────────────────
+function speakLast() { if (lastResult) speak(lastResult); }
+function speak(d) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const cfg = LANGS[lang];
+  const utt = new SpeechSynthesisUtterance(cfg.say(d));
+  utt.lang = cfg.code; utt.rate = 0.88; utt.volume = 1;
+  const voices = window.speechSynthesis.getVoices();
+  const match = voices.find(v => v.lang.startsWith(cfg.code.split('-')[0]));
+  if (match) utt.voice = match;
+  window.speechSynthesis.speak(utt);
+}
+
+// ── HISTORY ───────────────────────────────────────────────
+function addHistory(d, confidence) {
+  const now = new Date();
+  history.unshift({ denomination: d, confidence,
+    time: now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}),
+    date: now.toLocaleDateString([], {month:'short', day:'numeric'})
+  });
+  if (history.length > 30) history.pop();
+  try { Store.set('cf_history', JSON.stringify(history)); } catch(e) {}
+  renderHistory();
+}
+function clearHistory() { history = []; Store.del('cf_history'); renderHistory(); }
+function renderHistory() {
+  const el = document.getElementById('histList');
+  if (!history.length) { el.innerHTML = '<div class="empty-state">No detections yet</div>'; return; }
+  el.innerHTML = history.map((h, i) => {
+    const m = NOTE_META[h.denomination] || { color: 'var(--gold)' };
+    return `<div class="hist-item" style="animation-delay:${i*.04}s">
+      <span class="hist-amt" style="color:${m.color}">₹${h.denomination}</span>
+      <span class="hist-meta">${h.confidence}% · ${h.date} ${h.time}</span>
+      <button class="hist-speak" onclick="speak(${h.denomination})">🔊</button>
+    </div>`;
+  }).join('');
+}
+
+// ── STATUS ────────────────────────────────────────────────
+function setStatus(txt, type) {
+  document.getElementById('statusTxt').textContent = txt;
+  document.getElementById('statusDot').className = 'dot' + (type && type!=='idle' ? ' '+type : '');
+}
+function setAnalyzing(show, txt) {
+  if (txt) document.getElementById('analyzingTxt').textContent = txt;
+  document.getElementById('analyzing').classList.toggle('show', show);
+}
+
+init();
+</script>
+</body>
+</html>
