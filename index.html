@@ -254,68 +254,16 @@ const NOTE_META = {
   2000: { name: 'Two Thousand Rupees',   color: '#f87171' },
 };
 
-// ── Indian Rupee Note Color Profiles (HSV ranges) ──────────
-// Each note has carefully calibrated hue/saturation/value ranges
-// based on actual RBI Mahatma Gandhi New Series notes
+// ── Indian Rupee Note Target Profiles (HSV Target Centers) ──
+// We calculate how close each pixel is to these ideal colors
 const NOTE_PROFILES = {
-  10: {
-    // Chocolate brown / pink-brown
-    zones: [
-      { hMin:340, hMax:30,  sMin:20, sMax:80,  vMin:30, vMax:85, weight:3 }, // brown/pink
-      { hMin:15,  hMax:40,  sMin:15, sMax:60,  vMin:40, vMax:90, weight:2 }, // tan/beige
-    ],
-    dominantHue: 15, satRange: [15, 70], valRange: [35, 85],
-  },
-  20: {
-    // Yellow-green / olive green
-    zones: [
-      { hMin:50,  hMax:100, sMin:25, sMax:90,  vMin:35, vMax:90, weight:4 }, // yellow-green
-      { hMin:40,  hMax:70,  sMin:30, sMax:85,  vMin:40, vMax:88, weight:3 }, // olive
-    ],
-    dominantHue: 70, satRange: [25, 90], valRange: [35, 90],
-  },
-  50: {
-    // Fluorescent blue / cyan-blue
-    zones: [
-      { hMin:185, hMax:230, sMin:30, sMax:95,  vMin:40, vMax:95, weight:4 }, // cyan-blue
-      { hMin:170, hMax:210, sMin:25, sMax:90,  vMin:45, vMax:95, weight:3 }, // light blue
-    ],
-    dominantHue: 205, satRange: [30, 95], valRange: [40, 95],
-  },
-  100: {
-    // Lavender / blue-purple
-    zones: [
-      { hMin:240, hMax:290, sMin:15, sMax:70,  vMin:50, vMax:95, weight:4 }, // lavender
-      { hMin:220, hMax:260, sMin:20, sMax:75,  vMin:45, vMax:92, weight:3 }, // blue-purple
-    ],
-    dominantHue: 265, satRange: [15, 75], valRange: [50, 95],
-  },
-  200: {
-    // Bright yellow / orange-yellow
-    zones: [
-      { hMin:30,  hMax:60,  sMin:40, sMax:100, vMin:60, vMax:100, weight:5 }, // bright yellow
-      { hMin:20,  hMax:50,  sMin:35, sMax:95,  vMin:55, vMax:100, weight:3 }, // orange-yellow
-    ],
-    dominantHue: 45, satRange: [40, 100], valRange: [60, 100],
-  },
-  500: {
-    // Stone grey / greenish-grey
-    zones: [
-      { hMin:100, hMax:160, sMin:5,  sMax:40,  vMin:40, vMax:80, weight:4 }, // grey-green
-      { hMin:80,  hMax:140, sMin:5,  sMax:35,  vMin:45, vMax:82, weight:3 }, // stone grey
-      { hMin:0,   hMax:360, sMin:0,  sMax:25,  vMin:40, vMax:78, weight:2 }, // neutral grey
-    ],
-    dominantHue: 120, satRange: [3, 45], valRange: [38, 82],
-  },
-  2000: {
-    // Magenta / pink-red
-    zones: [
-      { hMin:290, hMax:360, sMin:30, sMax:95,  vMin:40, vMax:90, weight:4 }, // magenta
-      { hMin:320, hMax:380, sMin:25, sMax:90,  vMin:45, vMax:92, weight:4 }, // pink-red (wraps)
-      { hMin:0,   hMax:20,  sMin:25, sMax:90,  vMin:40, vMax:90, weight:3 }, // red
-    ],
-    dominantHue: 330, satRange: [25, 95], valRange: [40, 92],
-  },
+  10: { h: 18, s: 45, v: 45 },
+  20: { h: 60, s: 50, v: 65 },
+  50: { h: 195, s: 55, v: 65 },
+  100: { h: 255, s: 40, v: 65 },
+  200: { h: 38, s: 75, v: 80 },
+  500: { h: 110, s: 15, v: 55 },
+  2000: { h: 325, s: 55, v: 70 },
 };
 
 const LANGS = {
@@ -359,33 +307,20 @@ function rgbToHsv(r, g, b) {
   return [h * 360, s * 100, v * 100];
 }
 
-// ── Check if HSV falls in a zone (handles hue wrap at 360) ──
-function hsvInZone(h, s, v, zone) {
-  const hInRange = zone.hMin <= zone.hMax
-    ? (h >= zone.hMin && h <= zone.hMax)
-    : (h >= zone.hMin || h <= zone.hMax); // wraps around 0/360
-  return hInRange && s >= zone.sMin && s <= zone.sMax && v >= zone.vMin && v <= zone.vMax;
-}
-
-// ── Core detection: multi-zone weighted scoring ──────────
+// ── Core detection: absolute Euclidean HSV point-scoring ──
 function detectNote(imageData) {
   const { data, width, height } = imageData;
 
-  // Sample from 5 zones: center, top-center, bottom-center, left-center, right-center
-  // This handles partially visible notes much better
-  const regions = [
-    { x: 0.15, y: 0.15, w: 0.70, h: 0.70, weight: 3.0 }, // center (heaviest)
-    { x: 0.20, y: 0.05, w: 0.60, h: 0.30, weight: 1.5 }, // top band
-    { x: 0.20, y: 0.65, w: 0.60, h: 0.30, weight: 1.5 }, // bottom band
-    { x: 0.02, y: 0.20, w: 0.20, h: 0.60, weight: 1.0 }, // left (language panel)
-    { x: 0.78, y: 0.20, w: 0.20, h: 0.60, weight: 1.0 }, // right
-  ];
-
-  // Build HSV histogram for each region
+  // Track total weight accumulated for each note
   const scores = {};
   NOTES.forEach(n => scores[n] = 0);
 
-  let totalWeight = 0;
+  // We only care about a tight center box to minimize background interference
+  // We use two regions: a tight inner core, and a slightly larger ring.
+  const regions = [
+    { x: 0.35, y: 0.35, w: 0.30, h: 0.30, weight: 6.0 }, // tight core
+    { x: 0.20, y: 0.20, w: 0.60, h: 0.60, weight: 1.5 }, // softer boundary
+  ];
 
   for (const region of regions) {
     const x0 = Math.floor(region.x * width);
@@ -393,62 +328,69 @@ function detectNote(imageData) {
     const x1 = Math.floor((region.x + region.w) * width);
     const y1 = Math.floor((region.y + region.h) * height);
 
-    // Count pixel matches per note in this region
-    const noteHits = {};
-    NOTES.forEach(n => noteHits[n] = 0);
-    let totalPx = 0;
-
-    // Sample every 4th pixel for speed
+    // Sample every 4th pixel horizontally and vertically
     for (let y = y0; y < y1; y += 4) {
       for (let x = x0; x < x1; x += 4) {
         const i = (y * width + x) * 4;
         const r = data[i], g = data[i+1], b = data[i+2];
         const [h, s, v] = rgbToHsv(r, g, b);
-        totalPx++;
+
+        // Ignore completely dark/overexposed areas
+        if (v < 20 || v > 95) continue;
 
         for (const note of NOTES) {
-          const profile = NOTE_PROFILES[note];
-          for (const zone of profile.zones) {
-            if (hsvInZone(h, s, v, zone)) {
-              noteHits[note] += zone.weight;
-              break;
-            }
+          const target = NOTE_PROFILES[note];
+          let dh = Math.abs(h - target.h);
+          if (dh > 180) dh = 360 - dh;
+
+          const ds = Math.abs(s - target.s);
+          const dv = Math.abs(v - target.v);
+
+          // Calculate color distance (Hue is most important, then Saturation, then Value)
+          const D = (dh * 3.5) + (ds * 1.5) + (dv * 0.8);
+          const score = Math.max(0, 100 - D);
+
+          // If it matches well, give it exponential weight to avoid ambiguous backgrounds winning
+          if (score > 10) {
+            scores[note] += (score * score) * region.weight;
           }
         }
       }
     }
-
-    if (totalPx > 0) {
-      for (const note of NOTES) {
-        scores[note] += (noteHits[note] / totalPx) * region.weight;
-      }
-      totalWeight += region.weight;
-    }
-  }
-
-  // Normalize scores
-  if (totalWeight > 0) {
-    NOTES.forEach(n => scores[n] /= totalWeight);
   }
 
   // Find winner
   let best = null, bestScore = -1;
+  let totalScore = 0;
   for (const note of NOTES) {
+    totalScore += scores[note];
     if (scores[note] > bestScore) {
       bestScore = scores[note];
       best = note;
     }
   }
 
-  // Calculate confidence (how much better the winner is vs 2nd best)
-  const sorted = NOTES.map(n => scores[n]).sort((a,b) => b-a);
-  const gap = sorted[0] - (sorted[1] || 0);
-  
-  // Confidence: based on score magnitude and gap from 2nd place
-  const rawConf = Math.min(95, Math.round(
-    (bestScore * 120) + (gap * 200)
-  ));
-  const confidence = Math.max(30, rawConf);
+  // Calculate confidence reliably
+  let confidence = 0;
+  if (totalScore > 0) {
+     const sorted = NOTES.map(n => scores[n]).sort((a,b) => b-a);
+     const winRatio = sorted[0] / totalScore; // how much of the pie did it take?
+     const gap = sorted[0] - (sorted[1] || 0);
+
+     // normalize confidence 0-96
+     const rawConf = Math.min(96, Math.round(
+       (winRatio * 80) + ((gap / sorted[0]) * 30)
+     ));
+     confidence = Math.max(30, rawConf);
+     
+     // Detect if image is mostly irrelevant/not matching anything strongly
+     if (bestScore < 20000) {
+       confidence = Math.max(10, confidence - 40);
+     }
+  } else {
+     best = 50; 
+     confidence = 10;
+  }
 
   return { denomination: best, confidence, scores };
 }
