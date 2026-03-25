@@ -255,15 +255,15 @@ const NOTE_META = {
 };
 
 // ── Indian Rupee Note Target Profiles (HSV Target Centers) ──
-// We calculate how close each pixel is to these ideal colors
+// Tuned for poor lighting and smartphone shadows
 const NOTE_PROFILES = {
   10: { h: 18, s: 45, v: 45 },
-  20: { h: 60, s: 50, v: 65 },
-  50: { h: 195, s: 55, v: 65 },
-  100: { h: 255, s: 40, v: 65 },
-  200: { h: 38, s: 75, v: 80 },
-  500: { h: 110, s: 15, v: 55 },
-  2000: { h: 325, s: 55, v: 70 },
+  20: { h: 75, s: 40, v: 60 },
+  50: { h: 195, s: 35, v: 50 },
+  100: { h: 255, s: 35, v: 60 },
+  200: { h: 38, s: 70, v: 75 },
+  500: { h: 100, s: 10, v: 50 },
+  2000: { h: 325, s: 50, v: 65 },
 };
 
 const LANGS = {
@@ -336,7 +336,7 @@ function detectNote(imageData) {
         const [h, s, v] = rgbToHsv(r, g, b);
 
         // Ignore completely dark/overexposed areas
-        if (v < 20 || v > 95) continue;
+        if (v < 15 || v > 95) continue;
 
         for (const note of NOTES) {
           const target = NOTE_PROFILES[note];
@@ -346,11 +346,11 @@ function detectNote(imageData) {
           const ds = Math.abs(s - target.s);
           const dv = Math.abs(v - target.v);
 
-          // Calculate color distance (Hue is most important, then Saturation, then Value)
-          const D = (dh * 3.5) + (ds * 1.5) + (dv * 0.8);
+          // Calculate color distance (Hue is absolute king, saturation/value affected by lighting)
+          const D = (dh * 3.0) + (ds * 0.5) + (dv * 0.3);
           const score = Math.max(0, 100 - D);
 
-          // If it matches well, give it exponential weight to avoid ambiguous backgrounds winning
+          // Exponential weight to reward clear matches (and ignore noise)
           if (score > 10) {
             scores[note] += (score * score) * region.weight;
           }
@@ -482,10 +482,8 @@ async function captureDetect() {
   if (!vid.videoWidth) { setStatus('Camera not ready yet', 'error'); return; }
   cvs.width = vid.videoWidth; cvs.height = vid.videoHeight;
   const ctx = cvs.getContext('2d');
-  // Enhance: boost contrast and saturation for better color detection
-  ctx.filter = 'brightness(1.1) contrast(1.3) saturate(1.4)';
+  // Draw raw video frame (avoiding artificial saturation filters which destroy shadow colors)
   ctx.drawImage(vid, 0, 0);
-  ctx.filter = 'none';
   await runDetect(ctx, cvs.width, cvs.height);
 }
 
@@ -508,9 +506,7 @@ async function handleUpload(e) {
       const cvs = document.getElementById('canvas');
       cvs.width = image.width; cvs.height = image.height;
       const ctx = cvs.getContext('2d');
-      ctx.filter = 'brightness(1.05) contrast(1.2) saturate(1.3)';
       ctx.drawImage(image, 0, 0);
-      ctx.filter = 'none';
       await runDetect(ctx, cvs.width, cvs.height);
     };
     image.src = src;
