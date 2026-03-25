@@ -255,15 +255,15 @@ const NOTE_META = {
 };
 
 // ── Indian Rupee Note Target Profiles (HSV Target Centers) ──
-// Tuned for poor lighting and smartphone shadows
+// Tuned for poor lighting and MG New Series official colors
 const NOTE_PROFILES = {
-  10: { h: 18, s: 45, v: 45 },
-  20: { h: 75, s: 40, v: 60 },
-  50: { h: 195, s: 35, v: 50 },
-  100: { h: 255, s: 35, v: 60 },
-  200: { h: 38, s: 70, v: 75 },
-  500: { h: 100, s: 10, v: 50 },
-  2000: { h: 325, s: 50, v: 65 },
+  10:   { h: 25,  s: 25, v: 40,  name: 'Chocolate Brown' },
+  20:   { h: 70,  s: 35, v: 55,  name: 'Greenish Yellow' },
+  50:   { h: 200, s: 50, v: 65,  name: 'Fluorescent Blue' },
+  100:  { h: 260, s: 20, v: 60,  name: 'Lavender' },
+  200:  { h: 48,  s: 75, v: 85,  name: 'Bright Yellow' },
+  500:  { h: 120, s: 8,  v: 52,  name: 'Stone Grey' },
+  2000: { h: 335, s: 55, v: 65,  name: 'Magenta' },
 };
 
 const LANGS = {
@@ -307,92 +307,89 @@ function rgbToHsv(r, g, b) {
   return [h * 360, s * 100, v * 100];
 }
 
-// ── Core detection: absolute Euclidean HSV point-scoring ──
+// ── Core detection: Exclusive Voter Consensus Logic ──────
 function detectNote(imageData) {
   const { data, width, height } = imageData;
 
-  // Track total weight accumulated for each note
-  const scores = {};
-  NOTES.forEach(n => scores[n] = 0);
+  // pixelVotes tracks how many pixels primarily identified as a specific note
+  const pixelVotes = {};
+  NOTES.forEach(n => pixelVotes[n] = 0);
+  let totalVotes = 0;
 
-  // We only care about a tight center box to minimize background interference
-  // We use two regions: a tight inner core, and a slightly larger ring.
-  const regions = [
-    { x: 0.35, y: 0.35, w: 0.30, h: 0.30, weight: 6.0 }, // tight core
-    { x: 0.20, y: 0.20, w: 0.60, h: 0.60, weight: 1.5 }, // softer boundary
-  ];
+  // We scan the center 50% for high accuracy
+  const region = { x: 0.25, y: 0.25, w: 0.50, h: 0.50 };
+  const x0 = Math.floor(region.x * width);
+  const y0 = Math.floor(region.y * height);
+  const x1 = Math.floor((region.x + region.w) * width);
+  const y1 = Math.floor((region.y + region.h) * height);
 
-  for (const region of regions) {
-    const x0 = Math.floor(region.x * width);
-    const y0 = Math.floor(region.y * height);
-    const x1 = Math.floor((region.x + region.w) * width);
-    const y1 = Math.floor((region.y + region.h) * height);
+  for (let y = y0; y < y1; y += 4) {
+    for (let x = x0; x < x1; x += 4) {
+      const i = (y * width + x) * 4;
+      const r = data[i], g = data[i+1], b = data[i+2];
+      const [h, s, v] = rgbToHsv(r, g, b);
 
-    // Sample every 4th pixel horizontally and vertically
-    for (let y = y0; y < y1; y += 4) {
-      for (let x = x0; x < x1; x += 4) {
-        const i = (y * width + x) * 4;
-        const r = data[i], g = data[i+1], b = data[i+2];
-        const [h, s, v] = rgbToHsv(r, g, b);
+      // Skip noise/black/blown-out white
+      if (v < 15 || v > 96) continue;
 
-        // Ignore completely dark/overexposed areas
-        if (v < 15 || v > 95) continue;
+      let bestNote = null;
+      let highestPScore = -1;
 
-        for (const note of NOTES) {
-          const target = NOTE_PROFILES[note];
-          let dh = Math.abs(h - target.h);
-          if (dh > 180) dh = 360 - dh;
+      for (const note of NOTES) {
+        const target = NOTE_PROFILES[note];
 
-          const ds = Math.abs(s - target.s);
-          const dv = Math.abs(v - target.v);
+        // ── EXCLUSION GUARDS (Stop desaturated colors from being "fake winners") ──
+        if (note === 500 && s > 20) continue; // Stone grey is NEVER vibrant
+        if (note === 50 && s < 15) continue;  // Fluorescent blue is NEVER grey
+        if (note === 200 && s < 35) continue; // Bright yellow is ALWAYS saturated
+        if (note === 10 && v > 70) continue;  // Chocolate brown is NEVER bright white/yellow
+        if (note === 20 && s > 75) continue;  // 20 is more muted greenish-yellow than 200
 
-          // Calculate color distance (Hue is absolute king, saturation/value affected by lighting)
-          const D = (dh * 3.0) + (ds * 0.5) + (dv * 0.3);
-          const score = Math.max(0, 100 - D);
+        let dh = Math.abs(h - target.h);
+        if (dh > 180) dh = 360 - dh;
 
-          // Exponential weight to reward clear matches (and ignore noise)
-          if (score > 10) {
-            scores[note] += (score * score) * region.weight;
-          }
+        // Gaussian-like distance score
+        const dh_p = (dh * dh) / 500;
+        const ds_p = Math.abs(s - target.s) / 40;
+        const dv_p = Math.abs(v - target.v) / 60;
+        
+        const score = Math.exp(-(dh_p + ds_p + dv_p));
+
+        if (score > highestPScore) {
+          highestPScore = score;
+          bestNote = note;
         }
+      }
+
+      // Only count votes if the confidence for this pixel is decent
+      if (bestNote && highestPScore > 0.4) {
+        pixelVotes[bestNote]++;
+        totalVotes++;
       }
     }
   }
 
-  // Find winner
-  let best = null, bestScore = -1;
-  let totalScore = 0;
-  for (const note of NOTES) {
-    totalScore += scores[note];
-    if (scores[note] > bestScore) {
-      bestScore = scores[note];
-      best = note;
+  // Find dominant note from votes
+  let winner = 50;
+  let maxV = -1;
+  for (const n of NOTES) {
+    if (pixelVotes[n] > maxV) {
+      maxV = pixelVotes[n];
+      winner = n;
     }
   }
 
-  // Calculate confidence reliably
-  let confidence = 0;
-  if (totalScore > 0) {
-     const sorted = NOTES.map(n => scores[n]).sort((a,b) => b-a);
-     const winRatio = sorted[0] / totalScore; // how much of the pie did it take?
-     const gap = sorted[0] - (sorted[1] || 0);
-
-     // normalize confidence 0-96
-     const rawConf = Math.min(96, Math.round(
-       (winRatio * 80) + ((gap / sorted[0]) * 30)
-     ));
-     confidence = Math.max(30, rawConf);
-     
-     // Detect if image is mostly irrelevant/not matching anything strongly
-     if (bestScore < 20000) {
-       confidence = Math.max(10, confidence - 40);
-     }
-  } else {
-     best = 50; 
-     confidence = 10;
+  // Confidence is percentage of pixels that agreed on the winner
+  let confidence = 10;
+  if (totalVotes > 0) {
+    confidence = Math.round((maxV / totalVotes) * 100);
+    // If very few pixels matched anything at all, it's probably not a note
+    if (totalVotes < ( (y1-y0)*(x1-x0) / 100 )) {
+       confidence = Math.max(10, confidence - 60);
+    }
   }
 
-  return { denomination: best, confidence, scores };
+  return { denomination: winner, confidence, scores: pixelVotes };
 }
 
 // ── LANG ──────────────────────────────────────────────────
